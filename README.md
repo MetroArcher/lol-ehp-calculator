@@ -1,0 +1,1 @@
+This is a simple calculator that computes the effective HP in the game League of Legends, based on the user's inputs of hp, armor, mr and also the physical damage vs magic damage split (assuming no true damage on the enemy)
