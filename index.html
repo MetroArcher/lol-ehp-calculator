@@ -4,6 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <title>LoL Effective HP Calculator</title>
+    <link rel="stylesheet" href="style.css">
 </head>
 
 <body>
@@ -28,6 +29,12 @@
 <div class="input-group">
   <label>Enemy Physical Damage %</label>
   <input id="phys" type="number" placeholder="e.g. 70">
+<p id="magicInfo"></p>
+</div>
+
+<div class="input-group">
+  <label>Gold Budget</label>
+  <input id="gold" type="number" placeholder="e.g. 1500">
 </div>
 
 <button id="calculate">Calculate</button>
@@ -35,6 +42,8 @@
 <p id="result"></p>
 <p id="bestResult"></p>
 <p id="comparison"></p>
+<p id="itemResult"></p>
+<div id="fullItemRanking"></div>
 
 <script src="script.js"></script>
 
