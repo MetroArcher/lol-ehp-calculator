@@ -89,7 +89,7 @@ Increase in effective health after buying the item.
 **EHP Gain per Gold**
 How efficient the item is at increasing survivability.
 
-The tool displays the **top 5 most efficient items** for the current situation.
+The tool displays the **top 8 most efficient items** for the current situation.
 
 Note: Only **raw stats are considered**. Item passives are not included.
 

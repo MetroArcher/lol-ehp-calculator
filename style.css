@@ -1,44 +1,119 @@
 body {
-    font-family: Arial;
+    font-family: Arial, sans-serif;
+    background: #f5f5f5;
+    margin: 0;
+    padding: 30px;
+}
+
+h1 {
+    text-align: center;
+    margin-bottom: 25px;
+}
+
+.calculator {
     max-width: 1100px;
-    margin: 40px auto;
-    padding: 0 20px;
+    margin: 0 auto;
+}
+
+.inputs,
+.analysis-section {
+    background: white;
+    border: 1px solid #d9d9d9;
+    border-radius: 8px;
+    padding: 18px;
+    margin-bottom: 20px;
+}
+
+.analysis-section h2 {
+    margin-top: 0;
+    margin-bottom: 12px;
+    font-size: 20px;
+    border-bottom: 1px solid #e5e5e5;
+    padding-bottom: 8px;
 }
 
 .input-group {
     margin-bottom: 15px;
 }
 
+label {
+    display: block;
+    margin-bottom: 6px;
+    font-weight: bold;
+}
+
 input {
     width: 100%;
     padding: 8px;
     font-size: 16px;
+    box-sizing: border-box;
 }
 
 button {
-    padding: 10px;
-    font-size: 16px;
     width: 100%;
+    padding: 12px;
+    font-size: 16px;
     background-color: #3c78ff;
     color: white;
     border: none;
     cursor: pointer;
+    border-radius: 6px;
 }
 
 button:hover {
     background-color: #2e5fd1;
 }
-.item-container{
-    display:flex;
-    gap:20px;
-    flex-wrap:wrap;
-    margin-top:10px;
+
+#result,
+#bestResult,
+#comparison,
+#itemResult {
+    line-height: 1.5;
+    white-space: pre-line;
+}
+
+.item-container {
+    display: flex;
+    gap: 18px;
+    flex-wrap: wrap;
+    margin-top: 15px;
 }
 
 .item-card {
-    border: 1px solid #ccc;
-    padding: 10px;
-    width: 160px;
-    background: #f9f9f9;
-    border-radius: 6px;
+    width: 240px;
+    border: 1px solid #cfcfcf;
+    border-radius: 8px;
+    background: #f8f8f8;
+    padding: 14px;
+    box-sizing: border-box;
+}
+
+.item-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 10px;
+    min-height: 48px;
+}
+
+.item-icon {
+    width: 44px;
+    height: 44px;
+}
+
+.item-name {
+    font-weight: bold;
+    font-size: 15px;
+    line-height: 1.2;
+}
+
+.item-stats {
+    margin-bottom: 10px;
+    font-size: 14px;
+    line-height: 1.4;
+}
+
+.item-metrics {
+    font-size: 14px;
+    line-height: 1.4;
 }
