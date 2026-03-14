@@ -101,7 +101,7 @@ Tank itemization in League of Legends is often unclear because:
 
 * HP, Armor, and MR interact multiplicatively
 * Different damage mixes favor different stats
-* Completed items include powerful passives not visible in raw stats
+* Items arent equally gold efficient
 
 This calculator helps visualize **pure durability efficiency** and compare different item choices.
 
@@ -109,7 +109,7 @@ This calculator helps visualize **pure durability efficiency** and compare diffe
 
 # Current Limitations
 
-* Item **passives are not modeled**
+* Some Item **passives are not modeled**
 * Inventory slot limits are not enforced
 * Multiple copies of the same item may appear in component optimization
 * Damage types are simplified to **physical vs magic**
