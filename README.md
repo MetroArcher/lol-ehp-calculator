@@ -125,9 +125,27 @@ https://metroarcher.github.io/lol-ehp-calculator/
 No installation or dependencies are required.
 
 ---
+# Example of how I use this tool
 
-# Technologies Used
+This section is for those familiar with the game and have a sense of intuition of the game.
+Lets look at this scenario of a game where i am playing varus, and i have already the first 2 core items that give me the necessary tools to output reasonable damage over time. 
 
-* HTML
-* CSS
-* JavaScript
+![Example Scenario](images/ExampleLolScenario.png)
+
+Now looking at my next 3rd item, im looking for an item that gives me the maximum durability to survive the enemy engage so i can output my damage and also bait the enemies into using many abilities on me while my team can clean up the fight(for example Katarina loves having a bait like this). We also have an enchanter(Seraphine), so building defensively is even more effective as I increase the effective HP the shields/heals if i build resists (and also hp, as seraphine double W heals based on %missing hp).
+
+So thinking this through, and also knowing that i have conditioning+overgrowth in runes (which makes both buying resists and hp more effective), i check if my intuition is correct(and effectively build my intuition from examples like these) and run the tool with the HP and armor i would have at the time of purchasing the  **FULL** item (this is important, because from when you start building the item until you finish the item, you get quite alot of hp and armor from levels that will make a big difference on what item will be best).
+
+Based on game intuition, i predict that i will take around 70% physical damage from the enemy team, as swain is behind(and is more of a dps mage than burst) and rumble will hit me with his ult but usually wont reach me with his other spells. However ambessa is certainly going to be on top of me and graves will do the same aswell. I have put 1500 gold as the gold budget(its the usual gold i will recall on) but you can change it depending on what gold you have after a recall. So i put the information in the tool and i look at the analysis. 
+
+First thing to look at is the theoretical stat optimization, to have a sense of what will currently give me the maximum durability.
+
+![Short term analysis](images/ShortTermAnalysis.png)
+
+From this i can understand that right now i want to put more gold into buying armor, so i should prioritize buying armor components of the item.
+
+![Full Items analysis](images/FullItems.png)
+
+But when looking at the items i see that Randuins is the best gold effective item i can buy to be as tanky as possible against the enemy comp. And looking back at the component combination, if i want to be as tanky as possible and i have around 1500 gold, i should prioritize giants belt + 2x cloth armors as the buildpath for randuins, as the wardens mail passive isnt really useful against the enemy team composition. If we wanted to look at alternatives, for example jaksho could be better(the current tool doesnt calculate how effective it is with the passive on) but i know that in this game most fights will be bursty(they will damage me quickly in the beginning of the fight, i wont be able to stack jaksho until it is too late) so jaksho shouldnt be a good item here. Another option is warmogs which could be good (its passive is also not modeled in this tool), as it will give me more effective HP vs their team's magic damage dealers, however i see that in this game they have strong %HP damage (rumble Q, ambessa Q, nami's imperial mandate) so i also discard that option. As for the rest it should be pretty self explanatory that they are just worse overall.
+
+There are other scenarios this tool can be used for, for tanks on toplane or as final items for other adcs (for example crit ADCS that have all their core items and just want to have the highest durability item late game). Just be mindful of a few item passives not being modeled, which should be clear from the UI of the tool if it is present or not.

@@ -114,6 +114,25 @@ button:hover {
 }
 
 .item-metrics {
-    font-size: 14px;
+    margin-top: 10px;
+    line-height: 1.45;
+}
+
+.item-passive {
+    margin-top: 10px;
+    padding-top: 8px;
+    border-top: 1px solid #999;
+    font-size: 13px;
     line-height: 1.4;
+}
+
+.item-passive-title {
+    font-weight: 700;
+    margin-bottom: 4px;
+}
+
+.item-passive-text {
+    margin-top: 4px;
+    font-size: 12px;
+    color: #555;
 }

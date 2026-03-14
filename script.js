@@ -194,7 +194,7 @@ async function initializeCalculator() {
 
         const fullItemResults = rankFullItemsByEHP(hp, armor, mr, phys);
         const bestByEfficiency = [...fullItemResults]
-            .sort((a, b) => b.ehpPerGold - a.ehpPerGold)
+            .sort((a, b) => b.basePerGold - a.basePerGold)
             .slice(0, 8);
 
         let rankingHtml = "<div class='item-container'>";
@@ -215,9 +215,19 @@ async function initializeCalculator() {
 
                     <div class="item-metrics">
                         <div>Cost: ${item.cost}g</div>
-                        <div>EHP Gain: ${item.ehpGain.toFixed(2)}</div>
-                        <div>EHP / Gold: ${item.ehpPerGold.toFixed(4)}</div>
+                        <div>Base EHP Gain: ${item.baseGain.toFixed(2)}</div>
+                        <div>Base EHP / Gold: ${item.basePerGold.toFixed(4)}</div>
                     </div>
+
+                    ${item.passiveGain > 0 ? `
+                        <div class="item-passive">
+                            <div class="item-passive-title">Passive contribution</div>
+                            <div>Passive EHP Gain: ${item.passiveGain.toFixed(2)}</div>
+                            <div>Stacked Total EHP Gain: ${item.totalGain.toFixed(2)}</div>
+                            <div>Stacked Total EHP / Gold: ${item.totalPerGold.toFixed(4)}</div>
+                            <div class="item-passive-text">${item.passiveText}</div>
+                        </div>
+                    ` : ""}
                 </div>
             `;
         }
@@ -228,6 +238,84 @@ async function initializeCalculator() {
     });
 }
 
+function getPassiveAdjustedValues(item, baseHp, baseArmor, baseMr, physShare) {
+    let hp = baseHp + item.hp;
+    let armor = baseArmor + item.armor;
+    let mr = baseMr + item.mr;
+
+    let extraMagicShield = 0;
+    let passiveText = "";
+    let passiveStateText = "";
+
+    if (item.name === "Force of Nature") {
+        // Exact item effect: +70 bonus MR when fully stacked
+        mr += 70;
+        passiveText = "+70 MR from full FoN stacks";
+        passiveStateText = "Assumes Force of Nature is fully stacked";
+    }
+
+    if (item.name === "Kaenic Rookern") {
+        // Exact item effect: magic-only shield equal to 15% max HP
+        // Since item HP is already added above, this uses final max HP correctly
+        extraMagicShield = 0.15 * hp;
+        passiveText = `Magic shield: ${extraMagicShield.toFixed(2)} (15% max HP)`;
+        passiveStateText = "Assumes Kaenic shield is available";
+    }
+
+    const finalEhp = mixedEHPWithMagicShield(hp, armor, mr, physShare, extraMagicShield);
+    return {
+        finalEhp,
+        hp,
+        armor,
+        mr,
+        extraMagicShield,
+        passiveText,
+        passiveStateText
+    };
+}
+function mixedEHPWithModifiers(hp, armor, mr, physShare, options = {}) {
+    const magicShare = 1 - physShare;
+
+    const physicalReduction = options.physicalReduction || 0; // e.g. 0.30 for Randuin
+    const magicShield = options.magicShield || 0;             // e.g. Kaenic
+
+    const physicalDamageFraction =
+        physShare * (1 - physicalReduction) / (1 + armor / 100);
+
+    const magicDamageFraction =
+        magicShare / (1 + mr / 100);
+
+    const hpEhp = hp / (physicalDamageFraction + magicDamageFraction);
+
+    let shieldEhp = 0;
+
+    if (magicShield > 0 && magicShare > 0) {
+        shieldEhp = (magicShield * (1 + mr / 100)) / magicShare;
+    }
+
+    return hpEhp + shieldEhp;
+}
+function mixedEHPWithMagicShield(hp, armor, mr, physShare, magicShield = 0) {
+    const magicShare = 1 - physShare;
+
+    // Normal mixed EHP from HP pool
+    const hpPortion =
+        hp / (
+            physShare / (1 + armor / 100) +
+            magicShare / (1 + mr / 100)
+        );
+
+    // Extra EHP from a magic-only shield:
+    // each 1 shield blocks 1 magic damage after MR mitigation,
+    // so its pre-mitigation value is multiplied by (1 + mr/100)
+    const shieldPortion = magicShield * (1 + mr / 100);
+
+    // Only the magic share of incoming damage can be absorbed by the magic shield,
+    // so convert it into total mixed-damage EHP
+    const mixedShieldEhp = magicShare > 0 ? shieldPortion / magicShare : 0;
+
+    return hpPortion + mixedShieldEhp;
+}
 
 
 function bestStatsForBudget(hp, armor, mr, physShare, budget) {
@@ -348,13 +436,61 @@ function summarizeItems(items) {
 function rankFullItemsByEHP(baseHp, baseArmor, baseMr, physShare) {
     const baseEhp = mixedEHP(baseHp, baseArmor, baseMr, physShare);
 
-    const results = fullItems.map(item => {
-        const newHp = baseHp + item.hp;
-        const newArmor = baseArmor + item.armor;
-        const newMr = baseMr + item.mr;
+    return fullItems.map(item => {
+        const hp = baseHp + item.hp;
+        const armor = baseArmor + item.armor;
+        const mr = baseMr + item.mr;
 
-        const finalEhp = mixedEHP(newHp, newArmor, newMr, physShare);
-        const ehpGain = finalEhp - baseEhp;
+        const baseItemEhp = mixedEHP(hp, armor, mr, physShare);
+        const baseGain = baseItemEhp - baseEhp;
+
+        let passiveGain = 0;
+        let totalGain = baseGain;
+        let passiveText = "";
+
+        // Force of Nature: +70 MR when fully stacked
+        if (item.name === "Force of Nature") {
+            const activeEhp = mixedEHPWithModifiers(
+                hp,
+                armor,
+                mr + 70,
+                physShare
+            );
+
+            passiveGain = activeEhp - baseItemEhp;
+            totalGain = activeEhp - baseEhp;
+            passiveText = "+70 bonus MR (fully stacked)";
+        }
+
+        // Kaenic Rookern: magic shield = 15% max HP
+        else if (item.name === "Kaenic Rookern") {
+            const activeEhp = mixedEHPWithModifiers(
+                hp,
+                armor,
+                mr,
+                physShare,
+                { magicShield: 0.15 * hp }
+            );
+
+            passiveGain = activeEhp - baseItemEhp;
+            totalGain = activeEhp - baseEhp;
+            passiveText = "Magic damage shield equal to 15% max HP";
+        }
+
+        // Randuin's Omen: 30% less damage from crits
+        else if (item.name === "Randuin's Omen") {
+            const activeEhp = mixedEHPWithModifiers(
+                hp,
+                armor,
+                mr,
+                physShare,
+                { physicalReduction: 0.30 }
+            );
+
+            passiveGain = activeEhp - baseItemEhp;
+            totalGain = activeEhp - baseEhp;
+            passiveText = "Assumes all physical damage taken is from critical auto attacks (30% reduced damage from crits)";
+        }
 
         return {
             id: item.id,
@@ -363,13 +499,14 @@ function rankFullItemsByEHP(baseHp, baseArmor, baseMr, physShare) {
             hp: item.hp,
             armor: item.armor,
             mr: item.mr,
-            finalEhp: finalEhp,
-            ehpGain: ehpGain,
-            ehpPerGold: ehpGain / item.cost
+            baseGain,
+            passiveGain,
+            totalGain,
+            basePerGold: baseGain / item.cost,
+            totalPerGold: totalGain / item.cost,
+            passiveText
         };
     });
-
-    return results;
 }
 document.getElementById("phys").addEventListener("input", function() {
     const phys = Number(this.value);
