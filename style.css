@@ -15,12 +15,43 @@ h1 {
     margin: 0 auto;
 }
 
-.inputs,
+.top-section {
+    display: flex;
+    align-items: flex-start;
+    gap: 24px;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+}
+
+.inputs-panel,
+.advanced-panel,
 .analysis-section {
     background: white;
     border: 1px solid #d9d9d9;
     border-radius: 8px;
     padding: 18px;
+    box-sizing: border-box;
+}
+
+.inputs-panel {
+    width: 360px;
+    flex-shrink: 0;
+}
+
+.advanced-panel {
+    width: 300px;
+    display: none;
+}
+
+.advanced-title {
+    margin-top: 0;
+    margin-bottom: 14px;
+    font-size: 18px;
+    border-bottom: 1px solid #e5e5e5;
+    padding-bottom: 8px;
+}
+
+.analysis-section {
     margin-bottom: 20px;
 }
 
@@ -44,24 +75,55 @@ label {
 
 input {
     width: 100%;
-    padding: 8px;
+    padding: 8px 10px;
     font-size: 16px;
     box-sizing: border-box;
+    border: 1px solid #bfbfbf;
+    border-radius: 6px;
+    background: white;
 }
 
-button {
+#magicInfo {
+    margin-top: 6px;
+    font-size: 14px;
+    color: #666;
+}
+
+.primary-btn {
+    display: block;
     width: 100%;
     padding: 12px;
+    margin-top: 12px;
     font-size: 16px;
+    font-weight: 600;
     background-color: #3c78ff;
     color: white;
     border: none;
-    cursor: pointer;
     border-radius: 6px;
+    cursor: pointer;
 }
 
-button:hover {
+.primary-btn:hover {
     background-color: #2e5fd1;
+}
+
+.secondary-btn {
+    display: inline-block;
+    width: auto;
+    padding: 8px 14px;
+    margin-top: 4px;
+    background: white;
+    color: #555;
+    border: 1px solid #999;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+}
+
+.secondary-btn:hover {
+    background: #f2f2f2;
+    border-color: #777;
 }
 
 #result,
@@ -135,4 +197,153 @@ button:hover {
     margin-top: 4px;
     font-size: 12px;
     color: #555;
+}
+
+@media (max-width: 900px) {
+    .top-section {
+        flex-direction: column;
+    }
+
+    .inputs-panel,
+    .advanced-panel {
+        width: 100%;
+    }
+
+    .secondary-btn {
+        width: 100%;
+    }
+}
+#itemScenario {
+    margin-bottom: 16px;
+}
+
+.scenario-box {
+    background: #f8f8f8;
+    border: 1px solid #d6d6d6;
+    border-radius: 8px;
+    padding: 14px 16px;
+}
+
+.scenario-title {
+    font-weight: 700;
+    font-size: 18px;
+    margin-bottom: 12px;
+}
+
+.scenario-top {
+    display: flex;
+    gap: 28px;
+    flex-wrap: wrap;
+    margin-bottom: 14px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid #dddddd;
+}
+
+.scenario-top-item {
+    display: flex;
+    gap: 10px;
+    align-items: baseline;
+}
+
+.scenario-main {
+    display: grid;
+    grid-template-columns: 1fr 1fr 220px;
+    gap: 24px;
+    align-items: start;
+}
+
+.scenario-group {
+    min-width: 0;
+}
+
+.scenario-group-title {
+    font-weight: 700;
+    margin-bottom: 10px;
+    font-size: 15px;
+    color: #333;
+}
+
+.scenario-row {
+    display: grid;
+    grid-template-columns: auto auto;
+    gap: 10px;
+    padding: 4px 0;
+    justify-content: start;
+}
+
+.scenario-label {
+    font-weight: 600;
+    color: #333;
+}
+
+.scenario-value {
+    color: #111;
+    text-align: right;
+}
+
+.scenario-chart-group {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.damage-pie {
+    width: 120px;
+    height: 120px;
+    border-radius: 50%;
+    border: 1px solid #cfcfcf;
+    margin-bottom: 12px;
+}
+
+.damage-legend {
+    width: 100%;
+    font-size: 14px;
+}
+
+.damage-legend-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 6px;
+    justify-content: center;
+}
+
+.legend-dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    display: inline-block;
+}
+
+.legend-physical {
+    background: #d84a4a;
+}
+
+.legend-magic {
+    background: #4a78d8;
+}
+
+@media (max-width: 900px) {
+    .scenario-main {
+        grid-template-columns: 1fr;
+    }
+
+    .scenario-chart-group {
+        align-items: flex-start;
+    }
+
+    .damage-legend-row {
+        justify-content: flex-start;
+    }
+}
+#warmogBonusHpBox {
+    margin-top: 10px;
+}
+
+.warmog-extra-input {
+    background: #f8f8f8;
+    border: 1px solid #d6d6d6;
+    border-radius: 8px;
+    padding: 12px 14px;
+    max-width: 460px;
 }

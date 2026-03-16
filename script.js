@@ -1,9 +1,11 @@
-function mixedEHP(hp, armor, mr, physShare) {
+function mixedEHP(hp, armor, mr, physShare, pen) {
     const magicShare = 1 - physShare;
 
+    const { effectiveArmor, effectiveMr } = getEffectiveResists(armor, mr, pen);
+
     const damageFraction =
-        physShare / (1 + armor / 100) +
-        magicShare / (1 + mr / 100);
+        physShare / (1 + effectiveArmor / 100) +
+        magicShare / (1 + effectiveMr / 100);
 
     return hp / damageFraction;
 }
@@ -130,13 +132,37 @@ async function loadItemsFromRiot() {
 async function initializeCalculator() {
     await loadItemsFromRiot();
 
-    document.getElementById("calculate").addEventListener("click", function () {
-        const hp = Number(document.getElementById("hp").value);
+    document.getElementById("calculate").addEventListener("click", runCalculation);
+
+    const existingBonusHpInput = document.getElementById("existingBonusHp");
+
+    if (existingBonusHpInput) {
+        existingBonusHpInput.addEventListener("input", function () {
+            const warmogBox = document.getElementById("warmogBonusHpBox");
+
+            if (warmogBox && warmogBox.style.display !== "none") {
+                runCalculation();
+            }
+        });
+    }
+}
+function runCalculation(){
+    const hp = Number(document.getElementById("hp").value);
         const armor = Number(document.getElementById("armor").value);
         const mr = Number(document.getElementById("mr").value);
         const phys = Number(document.getElementById("phys").value) / 100;
+        const lethality = Number(document.getElementById("lethality").value);
+        const percentArmorPen = Number(document.getElementById("armorPen").value) / 100;
+        const flatMagicPen = Number(document.getElementById("magicPen").value);
+        const percentMagicPen = Number(document.getElementById("magicPenPercent").value) / 100;
 
-        const ehp = mixedEHP(hp, armor, mr, phys);
+        const pen = {
+            lethality,
+            percentArmorPen,
+            flatMagicPen,
+            percentMagicPen
+        };
+        const ehp = mixedEHP(hp, armor, mr, phys, pen);
 
         document.getElementById("result").textContent =
             "Effective HP: " + ehp.toFixed(2);
@@ -146,7 +172,7 @@ async function initializeCalculator() {
         const ARMOR_COST = 20;
         const MR_COST = 20;
 
-        const bestResult = bestStatsForBudget(hp, armor, mr, phys, budget);
+        const bestResult = bestStatsForBudget(hp, armor, mr, phys, budget, pen);
         const bestGain = bestResult.finalEhp - ehp;
 
         document.getElementById("bestResult").textContent =
@@ -158,13 +184,13 @@ async function initializeCalculator() {
             ". Final EHP: " + bestResult.finalEhp.toFixed(2);
 
         const hpAdded = budget / HP_COST;
-        const ehpAllHp = mixedEHP(hp + hpAdded, armor, mr, phys);
+        const ehpAllHp = mixedEHP(hp + hpAdded, armor, mr, phys, pen);
 
         const armorAdded = Math.floor(budget / ARMOR_COST);
-        const ehpAllArmor = mixedEHP(hp, armor + armorAdded, mr, phys);
+        const ehpAllArmor = mixedEHP(hp, armor + armorAdded, mr, phys, pen);
 
         const mrAdded = Math.floor(budget / MR_COST);
-        const ehpAllMr = mixedEHP(hp, armor, mr + mrAdded, phys);
+        const ehpAllMr = mixedEHP(hp, armor, mr + mrAdded, phys, pen);
 
         const ehpGainAllHp = ehpAllHp - ehp;
         const ehpGainAllArmor = ehpAllArmor - ehp;
@@ -179,7 +205,7 @@ async function initializeCalculator() {
             `;
 
         const gold = Number(document.getElementById("gold").value);
-        const bestItems = bestItemCombination(hp, armor, mr, phys, gold);
+        const bestItems = bestItemCombination(hp, armor, mr, phys, gold, pen);
         const itemGain = bestItems.finalEhp - ehp;
         const itemEhpPerGold = itemGain / gold;
         const itemSummary = bestItems.items.length ? summarizeItems(bestItems.items) : "None";
@@ -192,12 +218,23 @@ async function initializeCalculator() {
             Final EHP: ${bestItems.finalEhp.toFixed(2)}<br>
             EHP / Gold: ${itemEhpPerGold.toFixed(4)}`;
 
-        const fullItemResults = rankFullItemsByEHP(hp, armor, mr, phys);
+        const existingBonusHpInput = document.getElementById("existingBonusHp");
+        const existingBonusHp = Number(existingBonusHpInput?.value || 0);
+        const fullItemResults = rankFullItemsByEHP(hp, armor, mr, phys, pen, existingBonusHp);
         const bestByEfficiency = [...fullItemResults]
             .sort((a, b) => b.basePerGold - a.basePerGold)
             .slice(0, 8);
 
         let rankingHtml = "<div class='item-container'>";
+        const warmogShown = bestByEfficiency.some(item => item.name === "Warmog's Armor");
+        const warmogBox = document.getElementById("warmogBonusHpBox");
+
+        if (warmogShown) {
+            warmogBox.style.display = "block";
+        } else {
+            warmogBox.style.display = "none";
+        }
+                
 
         for (const item of bestByEfficiency) {
             rankingHtml += `
@@ -226,6 +263,7 @@ async function initializeCalculator() {
                             <div>Stacked Total EHP Gain: ${item.totalGain.toFixed(2)}</div>
                             <div>Stacked Total EHP / Gold: ${item.totalPerGold.toFixed(4)}</div>
                             <div class="item-passive-text">${item.passiveText}</div>
+                            <div class="item-passive-text"><em>${item.passiveStateText}</em></div>
                         </div>
                     ` : ""}
                 </div>
@@ -235,90 +273,188 @@ async function initializeCalculator() {
         rankingHtml += "</div>";
 
         document.getElementById("fullItemRanking").innerHTML = rankingHtml;
-    });
+        document.getElementById("itemScenario").innerHTML = `
+            <div class="scenario-box">
+                <div class="scenario-title">Scenario used for item ranking</div>
+
+                <div class="scenario-top">
+                    <div class="scenario-top-item">
+                        <span class="scenario-label">HP</span>
+                        <span class="scenario-value">${hp}</span>
+                    </div>
+                    <div class="scenario-top-item">
+                        <span class="scenario-label">Current EHP</span>
+                        <span class="scenario-value">${ehp.toFixed(2)}</span>
+                    </div>
+                </div>
+
+                <div class="scenario-main">
+                    <div class="scenario-group">
+                        <div class="scenario-group-title">Physical side</div>
+                        <div class="scenario-row">
+                            <span class="scenario-label">Armor</span>
+                            <span class="scenario-value">${armor}</span>
+                        </div>
+                        
+                        <div class="scenario-row">
+                            <span class="scenario-label">Lethality</span>
+                            <span class="scenario-value">${lethality}</span>
+                        </div>
+                        <div class="scenario-row">
+                            <span class="scenario-label">% Armor Pen</span>
+                            <span class="scenario-value">${(percentArmorPen * 100).toFixed(0)}%</span>
+                        </div>
+                    </div>
+
+                    <div class="scenario-group">
+                        <div class="scenario-group-title">Magic side</div>
+                        <div class="scenario-row">
+                            <span class="scenario-label">MR</span>
+                            <span class="scenario-value">${mr}</span>
+                        </div>
+                        
+                        <div class="scenario-row">
+                            <span class="scenario-label">Flat Magic Pen</span>
+                            <span class="scenario-value">${flatMagicPen}</span>
+                        </div>
+                        <div class="scenario-row">
+                            <span class="scenario-label">% Magic Pen</span>
+                            <span class="scenario-value">${(percentMagicPen * 100).toFixed(0)}%</span>
+                        </div>
+                    </div>
+
+                    <div class="scenario-chart-group">
+                        <div class="scenario-group-title">Damage split</div>
+                        <div 
+                            class="damage-pie" 
+                            style="background: conic-gradient(
+                                #d84a4a 0% ${(phys * 100).toFixed(2)}%,
+                                #4a78d8 ${(phys * 100).toFixed(2)}% 100%
+                            );"
+                        ></div>
+
+                        <div class="damage-legend">
+                            <div class="damage-legend-row">
+                                <span class="legend-dot legend-physical"></span>
+                                <span>Physical: ${(phys * 100).toFixed(0)}%</span>
+                            </div>
+                            <div class="damage-legend-row">
+                                <span class="legend-dot legend-magic"></span>
+                                <span>Magic: ${(100 - phys * 100).toFixed(0)}%</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+}
+function getEffectiveResists(armor, mr, pen) {
+    const armorAfterPercent = armor * (1 - pen.percentArmorPen);
+    const armorAfterFlat = armorAfterPercent - pen.lethality;
+
+    const mrAfterPercent = mr * (1 - pen.percentMagicPen);
+    const mrAfterFlat = mrAfterPercent - pen.flatMagicPen;
+
+    return {
+        effectiveArmor: Math.max(-99, armorAfterFlat),
+        effectiveMr: Math.max(-99, mrAfterFlat)
+    };
 }
 
-function getPassiveAdjustedValues(item, baseHp, baseArmor, baseMr, physShare) {
+function getPassiveAdjustedValues(item, baseHp, baseArmor, baseMr, physShare, pen, existingBonusHp = 0) {
     let hp = baseHp + item.hp;
     let armor = baseArmor + item.armor;
     let mr = baseMr + item.mr;
 
     let extraMagicShield = 0;
-    let passiveText = "";
-    let passiveStateText = "";
+    let passiveTexts = [];
+    let passiveStateTexts = [];
+    let finalEhp = mixedEHP(hp, armor, mr, physShare, pen);
 
     if (item.name === "Force of Nature") {
-        // Exact item effect: +70 bonus MR when fully stacked
         mr += 70;
-        passiveText = "+70 MR from full FoN stacks";
-        passiveStateText = "Assumes Force of Nature is fully stacked";
+        finalEhp = mixedEHP(hp, armor, mr, physShare, pen);
+        passiveTexts.push("+70 MR from full FoN stacks");
+        passiveStateTexts.push("Assumes Force of Nature is fully stacked");
     }
 
     if (item.name === "Kaenic Rookern") {
-        // Exact item effect: magic-only shield equal to 15% max HP
-        // Since item HP is already added above, this uses final max HP correctly
         extraMagicShield = 0.15 * hp;
-        passiveText = `Magic shield: ${extraMagicShield.toFixed(2)} (15% max HP)`;
-        passiveStateText = "Assumes Kaenic shield is available";
+        finalEhp = mixedEHPWithMagicShield(hp, armor, mr, physShare, extraMagicShield, pen);
+        passiveTexts.push(`Magic shield: ${extraMagicShield.toFixed(2)} (15% max HP)`);
+        passiveStateTexts.push("Assumes Kaenic shield is available");
     }
 
-    const finalEhp = mixedEHPWithMagicShield(hp, armor, mr, physShare, extraMagicShield);
+    if (item.name === "Warmog's Armor") {
+        const warmogPassiveHp = 0.12 * (existingBonusHp + item.hp);
+        hp += warmogPassiveHp;
+        finalEhp = mixedEHP(hp, armor, mr, physShare, pen);
+        passiveTexts.push(`+${warmogPassiveHp.toFixed(2)} HP from Warmog passive (12% bonus HP)`);
+        passiveStateTexts.push(`Assumes ${existingBonusHp} bonus HP from current build`);
+    }
+
+    if (item.name === "Randuin's Omen") {
+        finalEhp = mixedEHPWithModifiers(hp, armor, mr, physShare, pen, {
+            physicalReduction: 0.30
+        });
+        passiveTexts.push("30% reduced physical damage taken from crit auto attacks");
+        passiveStateTexts.push("Assumes all physical damage is from crit auto attacks");
+    }
+
     return {
         finalEhp,
         hp,
         armor,
         mr,
         extraMagicShield,
-        passiveText,
-        passiveStateText
+        passiveText: passiveTexts.join(" | "),
+        passiveStateText: passiveStateTexts.join(" | ")
     };
 }
-function mixedEHPWithModifiers(hp, armor, mr, physShare, options = {}) {
+function mixedEHPWithModifiers(hp, armor, mr, physShare, pen, options = {}) {
     const magicShare = 1 - physShare;
 
-    const physicalReduction = options.physicalReduction || 0; // e.g. 0.30 for Randuin
-    const magicShield = options.magicShield || 0;             // e.g. Kaenic
+    const { effectiveArmor, effectiveMr } = getEffectiveResists(armor, mr, pen);
+
+    const physicalReduction = options.physicalReduction || 0;
+    const magicShield = options.magicShield || 0;
 
     const physicalDamageFraction =
-        physShare * (1 - physicalReduction) / (1 + armor / 100);
+        physShare * (1 - physicalReduction) / (1 + effectiveArmor / 100);
 
     const magicDamageFraction =
-        magicShare / (1 + mr / 100);
+        magicShare / (1 + effectiveMr / 100);
 
     const hpEhp = hp / (physicalDamageFraction + magicDamageFraction);
 
     let shieldEhp = 0;
 
     if (magicShield > 0 && magicShare > 0) {
-        shieldEhp = (magicShield * (1 + mr / 100)) / magicShare;
+        shieldEhp = (magicShield * (1 + effectiveMr / 100)) / magicShare;
     }
 
     return hpEhp + shieldEhp;
 }
-function mixedEHPWithMagicShield(hp, armor, mr, physShare, magicShield = 0) {
+function mixedEHPWithMagicShield(hp, armor, mr, physShare, magicShield = 0, pen) {
     const magicShare = 1 - physShare;
 
-    // Normal mixed EHP from HP pool
+    const { effectiveArmor, effectiveMr } = getEffectiveResists(armor, mr, pen);
+
     const hpPortion =
         hp / (
-            physShare / (1 + armor / 100) +
-            magicShare / (1 + mr / 100)
+            physShare / (1 + effectiveArmor / 100) +
+            magicShare / (1 + effectiveMr / 100)
         );
 
-    // Extra EHP from a magic-only shield:
-    // each 1 shield blocks 1 magic damage after MR mitigation,
-    // so its pre-mitigation value is multiplied by (1 + mr/100)
-    const shieldPortion = magicShield * (1 + mr / 100);
+    const shieldPortion = magicShield * (1 + effectiveMr / 100);
 
-    // Only the magic share of incoming damage can be absorbed by the magic shield,
-    // so convert it into total mixed-damage EHP
     const mixedShieldEhp = magicShare > 0 ? shieldPortion / magicShare : 0;
 
     return hpPortion + mixedShieldEhp;
 }
 
 
-function bestStatsForBudget(hp, armor, mr, physShare, budget) {
+function bestStatsForBudget(hp, armor, mr, physShare, budget, pen) {
     const hpCost = 8/3;
     const armorCost = 20;
     const mrCost = 20;
@@ -327,7 +463,7 @@ function bestStatsForBudget(hp, armor, mr, physShare, budget) {
         addedHp: 0,
         addedArmor: 0,
         addedMr: 0,
-        finalEhp: mixedEHP(hp, armor, mr, physShare),
+        finalEhp: mixedEHP(hp, armor, mr, physShare, pen),
         spentGold: 0
     };
 
@@ -349,7 +485,7 @@ function bestStatsForBudget(hp, armor, mr, physShare, budget) {
             const newArmor = armor + addedArmor;
             const newMr = mr + addedMr;
 
-            const ehp = mixedEHP(newHp, newArmor, newMr, physShare);
+            const ehp = mixedEHP(newHp, newArmor, newMr, physShare, pen);
 
             if (ehp > bestResult.finalEhp) {
                 bestResult = {
@@ -365,10 +501,10 @@ function bestStatsForBudget(hp, armor, mr, physShare, budget) {
 
     return bestResult;
 }
-function bestItemCombination(baseHp, baseArmor, baseMr, physShare, budget) {
+function bestItemCombination(baseHp, baseArmor, baseMr, physShare, budget, pen) {
 
     let bestResult = {
-        finalEhp: mixedEHP(baseHp, baseArmor, baseMr, physShare),
+        finalEhp: mixedEHP(baseHp, baseArmor, baseMr, physShare, pen),
         cost: 0,
         hp: 0,
         armor: 0,
@@ -382,7 +518,8 @@ function bestItemCombination(baseHp, baseArmor, baseMr, physShare, budget) {
             baseHp + hp,
             baseArmor + armor,
             baseMr + mr,
-            physShare
+            physShare,
+            pen
         );
 
         if (ehp > bestResult.finalEhp) {
@@ -433,64 +570,31 @@ function summarizeItems(items) {
         .join(", ");
 }
 
-function rankFullItemsByEHP(baseHp, baseArmor, baseMr, physShare) {
-    const baseEhp = mixedEHP(baseHp, baseArmor, baseMr, physShare);
+function rankFullItemsByEHP(baseHp, baseArmor, baseMr, physShare, pen, existingBonusHp = 0) {
+    const baseEhp = mixedEHP(baseHp, baseArmor, baseMr, physShare, pen);
 
     return fullItems.map(item => {
-        const hp = baseHp + item.hp;
-        const armor = baseArmor + item.armor;
-        const mr = baseMr + item.mr;
+        // Base item only, without passive effects
+        const rawHp = baseHp + item.hp;
+        const rawArmor = baseArmor + item.armor;
+        const rawMr = baseMr + item.mr;
 
-        const baseItemEhp = mixedEHP(hp, armor, mr, physShare);
+        const baseItemEhp = mixedEHP(rawHp, rawArmor, rawMr, physShare, pen);
         const baseGain = baseItemEhp - baseEhp;
 
-        let passiveGain = 0;
-        let totalGain = baseGain;
-        let passiveText = "";
+        // With passive effects included
+        const adjusted = getPassiveAdjustedValues(
+            item,
+            baseHp,
+            baseArmor,
+            baseMr,
+            physShare,
+            pen,
+            existingBonusHp
+        );
 
-        // Force of Nature: +70 MR when fully stacked
-        if (item.name === "Force of Nature") {
-            const activeEhp = mixedEHPWithModifiers(
-                hp,
-                armor,
-                mr + 70,
-                physShare
-            );
-
-            passiveGain = activeEhp - baseItemEhp;
-            totalGain = activeEhp - baseEhp;
-            passiveText = "+70 bonus MR (fully stacked)";
-        }
-
-        // Kaenic Rookern: magic shield = 15% max HP
-        else if (item.name === "Kaenic Rookern") {
-            const activeEhp = mixedEHPWithModifiers(
-                hp,
-                armor,
-                mr,
-                physShare,
-                { magicShield: 0.15 * hp }
-            );
-
-            passiveGain = activeEhp - baseItemEhp;
-            totalGain = activeEhp - baseEhp;
-            passiveText = "Magic damage shield equal to 15% max HP";
-        }
-
-        // Randuin's Omen: 30% less damage from crits
-        else if (item.name === "Randuin's Omen") {
-            const activeEhp = mixedEHPWithModifiers(
-                hp,
-                armor,
-                mr,
-                physShare,
-                { physicalReduction: 0.30 }
-            );
-
-            passiveGain = activeEhp - baseItemEhp;
-            totalGain = activeEhp - baseEhp;
-            passiveText = "Assumes all physical damage taken is from critical auto attacks (30% reduced damage from crits)";
-        }
+        const passiveGain = adjusted.finalEhp - baseItemEhp;
+        const totalGain = adjusted.finalEhp - baseEhp;
 
         return {
             id: item.id,
@@ -504,7 +608,8 @@ function rankFullItemsByEHP(baseHp, baseArmor, baseMr, physShare) {
             totalGain,
             basePerGold: baseGain / item.cost,
             totalPerGold: totalGain / item.cost,
-            passiveText
+            passiveText: adjusted.passiveText,
+            passiveStateText: adjusted.passiveStateText
         };
     });
 }
@@ -514,6 +619,17 @@ document.getElementById("phys").addEventListener("input", function() {
 
     document.getElementById("magicInfo").textContent =
         `Magic Damage: ${magic}%`;
+});
+document.getElementById("toggleAdvanced").addEventListener("click", function () {
+    const advanced = document.getElementById("advancedOptions");
+
+    if (advanced.style.display === "none" || advanced.style.display === "") {
+        advanced.style.display = "block";
+        this.textContent = "Hide Advanced Options";
+    } else {
+        advanced.style.display = "none";
+        this.textContent = "Show Advanced Options";
+    }
 });
 
 initializeCalculator();
