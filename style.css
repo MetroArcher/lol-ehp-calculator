@@ -336,14 +336,30 @@ input {
         justify-content: flex-start;
     }
 }
-#warmogBonusHpBox {
-    margin-top: 10px;
+
+.passive-inline-row {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 16px;
+    margin: 20px 0;
+    width: 100%;
 }
 
-.warmog-extra-input {
-    background: #f8f8f8;
-    border: 1px solid #d6d6d6;
-    border-radius: 8px;
-    padding: 12px 14px;
-    max-width: 460px;
+.passive-inline-field {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    margin: 0;
+}
+
+.passive-inline-field label {
+    display: block;
+    margin: 0 0 6px 0;
+    font-weight: 600;
+}
+
+.passive-inline-field input {
+    width: 100%;
+    box-sizing: border-box;
+    margin: 0;
 }

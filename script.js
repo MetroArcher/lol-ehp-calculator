@@ -13,7 +13,7 @@ function mixedEHP(hp, armor, mr, physShare, pen) {
 let ITEM_IMG_BASE = "";
 let components = [];
 let fullItems = [];
-
+let showAllFullItems = false;
 async function loadItemsFromRiot() {
     try {
         const versionsResponse = await fetch("https://ddragon.leagueoflegends.com/api/versions.json");
@@ -135,16 +135,45 @@ async function initializeCalculator() {
     document.getElementById("calculate").addEventListener("click", runCalculation);
 
     const existingBonusHpInput = document.getElementById("existingBonusHp");
+    const existingBonusArmorInput = document.getElementById("existingBonusArmor");
+    const existingBonusMrInput = document.getElementById("existingBonusMr");
+
+    function isVisible(id) {
+        const el = document.getElementById(id);
+        return el && el.style.display !== "none";
+    }
 
     if (existingBonusHpInput) {
         existingBonusHpInput.addEventListener("input", function () {
-            const warmogBox = document.getElementById("warmogBonusHpBox");
-
-            if (warmogBox && warmogBox.style.display !== "none") {
+            if (isVisible("warmogBonusHpBox")) {
                 runCalculation();
             }
         });
     }
+
+    if (existingBonusArmorInput) {
+        existingBonusArmorInput.addEventListener("input", function () {
+            if (isVisible("jakshoArmorBox") || isVisible("jakshoMrBox")) {
+                runCalculation();
+            }
+        });
+    }
+
+    if (existingBonusMrInput) {
+        existingBonusMrInput.addEventListener("input", function () {
+            if (isVisible("jakshoArmorBox") || isVisible("jakshoMrBox")) {
+                runCalculation();
+            }
+        });
+    }
+    const toggleFullItemViewButton = document.getElementById("toggleFullItemView");
+    if (toggleFullItemViewButton) {
+        toggleFullItemViewButton.addEventListener("click", function () {
+            showAllFullItems = !showAllFullItems;
+            this.textContent = showAllFullItems ? "Show Top 8 Only" : "Show All Items";
+            runCalculation();
+        });
+}
 }
 function runCalculation(){
     const hp = Number(document.getElementById("hp").value);
@@ -207,36 +236,67 @@ function runCalculation(){
         const gold = Number(document.getElementById("gold").value);
         const bestItems = bestItemCombination(hp, armor, mr, phys, gold, pen);
         const itemGain = bestItems.finalEhp - ehp;
-        const itemEhpPerGold = itemGain / gold;
+        const actualGoldSpent = bestItems.cost;
+        const itemEhpPerGold = actualGoldSpent > 0 ? itemGain / actualGoldSpent : 0;
         const itemSummary = bestItems.items.length ? summarizeItems(bestItems.items) : "None";
 
         document.getElementById("itemResult").innerHTML =
-            `Best item combination (${gold} gold):<br>
+            `Best component combination (budget: ${gold}g):<br>
             Items: ${itemSummary}<br>
+            Gold used: ${actualGoldSpent}g / ${gold}g<br>
             Added stats: +${bestItems.hp} HP, +${bestItems.armor} Armor, +${bestItems.mr} MR<br>
             EHP Gain: +${itemGain.toFixed(2)}<br>
             Final EHP: ${bestItems.finalEhp.toFixed(2)}<br>
-            EHP / Gold: ${itemEhpPerGold.toFixed(4)}`;
-
+            EHP / Gold Spent: ${itemEhpPerGold.toFixed(4)}`;
         const existingBonusHpInput = document.getElementById("existingBonusHp");
+        const existingBonusArmorInput = document.getElementById("existingBonusArmor");
+        const existingBonusMrInput = document.getElementById("existingBonusMr");
+
         const existingBonusHp = Number(existingBonusHpInput?.value || 0);
-        const fullItemResults = rankFullItemsByEHP(hp, armor, mr, phys, pen, existingBonusHp);
-        const bestByEfficiency = [...fullItemResults]
-            .sort((a, b) => b.basePerGold - a.basePerGold)
-            .slice(0, 8);
+        const existingBonusArmor = Number(existingBonusArmorInput?.value || 0);
+        const existingBonusMr = Number(existingBonusMrInput?.value || 0);
 
+        const fullItemResults = rankFullItemsByEHP(
+            hp,
+            armor,
+            mr,
+            phys,
+            pen,
+            existingBonusHp,
+            existingBonusArmor,
+            existingBonusMr
+        );
+
+        const sortedFullItemResults = [...fullItemResults]
+            .sort((a, b) => b.basePerGold - a.basePerGold);
+
+        const displayedItems = showAllFullItems
+            ? sortedFullItemResults
+            : sortedFullItemResults.slice(0, 8);
         let rankingHtml = "<div class='item-container'>";
-        const warmogShown = bestByEfficiency.some(item => item.name === "Warmog's Armor");
-        const warmogBox = document.getElementById("warmogBonusHpBox");
 
-        if (warmogShown) {
-            warmogBox.style.display = "block";
-        } else {
-            warmogBox.style.display = "none";
+        const warmogShown = displayedItems.some(item => item.name === "Warmog's Armor");
+        const jakshoShown = displayedItems.some(item => item.name === "Jak'Sho, The Protean");
+
+        const warmogBox = document.getElementById("warmogBonusHpBox");
+        const jakshoArmorBox = document.getElementById("jakshoArmorBox");
+        const jakshoMrBox = document.getElementById("jakshoMrBox");
+
+
+        if (warmogBox) {
+            warmogBox.style.display = warmogShown ? "block" : "none";
+        }
+
+        if (jakshoArmorBox) {
+            jakshoArmorBox.style.display = jakshoShown ? "block" : "none";
+        }
+
+        if (jakshoMrBox) {
+            jakshoMrBox.style.display = jakshoShown ? "block" : "none";
         }
                 
 
-        for (const item of bestByEfficiency) {
+        for (const item of displayedItems) {
             rankingHtml += `
                 <div class="item-card">
                     <div class="item-header">
@@ -361,7 +421,17 @@ function getEffectiveResists(armor, mr, pen) {
     };
 }
 
-function getPassiveAdjustedValues(item, baseHp, baseArmor, baseMr, physShare, pen, existingBonusHp = 0) {
+function getPassiveAdjustedValues(
+    item,
+    baseHp,
+    baseArmor,
+    baseMr,
+    physShare,
+    pen,
+    existingBonusHp = 0,
+    existingBonusArmor = 0,
+    existingBonusMr = 0
+) {
     let hp = baseHp + item.hp;
     let armor = baseArmor + item.armor;
     let mr = baseMr + item.mr;
@@ -400,6 +470,25 @@ function getPassiveAdjustedValues(item, baseHp, baseArmor, baseMr, physShare, pe
         passiveTexts.push("30% reduced physical damage taken from crit auto attacks");
         passiveStateTexts.push("Assumes all physical damage is from crit auto attacks");
     }
+    if (item.name === "Jak'Sho, The Protean") {
+    const bonusArmorAfterItem = existingBonusArmor + item.armor;
+    const bonusMrAfterItem = existingBonusMr + item.mr;
+
+    const jakshoBonusArmor = 0.30 * bonusArmorAfterItem;
+    const jakshoBonusMr = 0.30 * bonusMrAfterItem;
+
+    armor += jakshoBonusArmor;
+    mr += jakshoBonusMr;
+
+    finalEhp = mixedEHP(hp, armor, mr, physShare, pen);
+
+    passiveTexts.push(
+        `+${jakshoBonusArmor.toFixed(2)} Armor and +${jakshoBonusMr.toFixed(2)} MR from Jak'Sho passive (30% bonus resists)`
+    );
+    passiveStateTexts.push(
+        `Assumes Passive is stacked with ${bonusArmorAfterItem} bonus Armor and ${bonusMrAfterItem} bonus MR`
+    );
+}
 
     return {
         finalEhp,
@@ -570,7 +659,16 @@ function summarizeItems(items) {
         .join(", ");
 }
 
-function rankFullItemsByEHP(baseHp, baseArmor, baseMr, physShare, pen, existingBonusHp = 0) {
+function rankFullItemsByEHP(
+    baseHp,
+    baseArmor,
+    baseMr,
+    physShare,
+    pen,
+    existingBonusHp = 0,
+    existingBonusArmor = 0,
+    existingBonusMr = 0
+) {
     const baseEhp = mixedEHP(baseHp, baseArmor, baseMr, physShare, pen);
 
     return fullItems.map(item => {
@@ -590,7 +688,9 @@ function rankFullItemsByEHP(baseHp, baseArmor, baseMr, physShare, pen, existingB
             baseMr,
             physShare,
             pen,
-            existingBonusHp
+            existingBonusHp,
+            existingBonusArmor,
+            existingBonusMr
         );
 
         const passiveGain = adjusted.finalEhp - baseItemEhp;

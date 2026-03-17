@@ -95,13 +95,26 @@
             <div class="analysis-section">
                 <h2>Top Full Items by EHP per Gold</h2>
                 <div id="itemScenario"></div>
-                <div id="warmogBonusHpBox" style="display:none; margin-bottom: 16px;">
-                    <div class="input-group warmog-extra-input">
-                        <label>Bonus HP from other owned items (for Warmog's passive)</label>
-                        <input id="existingBonusHp" type="number" min="0" value="0" placeholder="e.g. 400">
+                <div class="passive-inline-row">
+                    <div class="passive-inline-field" id="warmogBonusHpBox">
+                        <label for="existingBonusHp">Warmog bonus HP</label>
+                        <input id="existingBonusHp" type="number" min="0" value="0">
+                    </div>
+
+                    <div class="passive-inline-field" id="jakshoArmorBox">
+                        <label for="existingBonusArmor">Jak'Sho bonus Armor</label>
+                        <input id="existingBonusArmor" type="number" min="0" value="0">
+                    </div>
+
+                    <div class="passive-inline-field" id="jakshoMrBox">
+                        <label for="existingBonusMr">Jak'Sho bonus MR</label>
+                        <input id="existingBonusMr" type="number" min="0" value="0">
                     </div>
                 </div>
                 <div id="fullItemRanking"></div>
+                <div class="ranking-controls">
+                    <button id="toggleFullItemView" type="button">Show All Items</button>
+                </div>
             </div>
         </div>
 
