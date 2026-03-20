@@ -252,7 +252,12 @@ input {
     align-items: start;
 }
 
-.scenario-group {
+.scenario-group,
+.scenario-chart-group {
+    background: #fbfbfb;
+    border: 1px solid #dcdcdc;
+    border-radius: 8px;
+    padding: 12px 14px;
     min-width: 0;
 }
 
@@ -264,11 +269,16 @@ input {
 }
 
 .scenario-row {
-    display: grid;
-    grid-template-columns: auto auto;
-    gap: 10px;
-    padding: 4px 0;
-    justify-content: start;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    padding: 6px 0;
+    border-bottom: 1px solid #ececec;
+}
+
+.scenario-row:last-child {
+    border-bottom: none;
 }
 
 .scenario-label {
@@ -279,6 +289,22 @@ input {
 .scenario-value {
     color: #111;
     text-align: right;
+}
+
+.scenario-enemy-row .scenario-label,
+.scenario-enemy-row .scenario-value {
+    color: #9a4a4a;
+}
+
+.scenario-effective-row {
+    margin-top: 4px;
+    padding-top: 10px;
+    border-top: 1px solid #d4d4d4;
+}
+
+.scenario-effective-row .scenario-label,
+.scenario-effective-row .scenario-value {
+    font-weight: 700;
 }
 
 .scenario-chart-group {
@@ -338,28 +364,26 @@ input {
 }
 
 .passive-inline-row {
-    display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 16px;
-    margin: 20px 0;
-    width: 100%;
+    display: flex;
+    flex-direction: row;
+    gap: 14px;
+    align-items: flex-end;
+    flex-wrap: wrap;
+    margin-bottom: 12px;
 }
 
 .passive-inline-field {
     display: flex;
     flex-direction: column;
-    min-width: 0;
-    margin: 0;
 }
 
 .passive-inline-field label {
-    display: block;
-    margin: 0 0 6px 0;
-    font-weight: 600;
+    font-size: 13px;
+    margin-bottom: 3px;
 }
 
 .passive-inline-field input {
-    width: 100%;
-    box-sizing: border-box;
-    margin: 0;
+    width: 80px;
+    padding: 4px;
+    font-size: 13px;
 }

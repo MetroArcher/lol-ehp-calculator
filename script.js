@@ -137,6 +137,7 @@ async function initializeCalculator() {
     const existingBonusHpInput = document.getElementById("existingBonusHp");
     const existingBonusArmorInput = document.getElementById("existingBonusArmor");
     const existingBonusMrInput = document.getElementById("existingBonusMr");
+    const champLevelInput = document.getElementById("champLevel");
 
     function isVisible(id) {
         const el = document.getElementById(id);
@@ -153,7 +154,11 @@ async function initializeCalculator() {
 
     if (existingBonusArmorInput) {
         existingBonusArmorInput.addEventListener("input", function () {
-            if (isVisible("jakshoArmorBox") || isVisible("jakshoMrBox")) {
+            if (
+                isVisible("jakshoArmorBox") ||
+                isVisible("jakshoMrBox") ||
+                isVisible("protoplasmLevelBox")
+            ) {
                 runCalculation();
             }
         });
@@ -161,11 +166,24 @@ async function initializeCalculator() {
 
     if (existingBonusMrInput) {
         existingBonusMrInput.addEventListener("input", function () {
-            if (isVisible("jakshoArmorBox") || isVisible("jakshoMrBox")) {
+            if (
+                isVisible("jakshoArmorBox") ||
+                isVisible("jakshoMrBox") ||
+                isVisible("protoplasmLevelBox")
+            ) {
                 runCalculation();
             }
         });
     }
+
+    if (champLevelInput) {
+        champLevelInput.addEventListener("input", function () {
+            if (isVisible("protoplasmLevelBox")) {
+                runCalculation();
+            }
+        });
+    }
+
     const toggleFullItemViewButton = document.getElementById("toggleFullItemView");
     if (toggleFullItemViewButton) {
         toggleFullItemViewButton.addEventListener("click", function () {
@@ -173,7 +191,7 @@ async function initializeCalculator() {
             this.textContent = showAllFullItems ? "Show Top 8 Only" : "Show All Items";
             runCalculation();
         });
-}
+    }
 }
 function runCalculation(){
     const hp = Number(document.getElementById("hp").value);
@@ -251,10 +269,12 @@ function runCalculation(){
         const existingBonusHpInput = document.getElementById("existingBonusHp");
         const existingBonusArmorInput = document.getElementById("existingBonusArmor");
         const existingBonusMrInput = document.getElementById("existingBonusMr");
+        const champLevelInput = document.getElementById("champLevel");
 
         const existingBonusHp = Number(existingBonusHpInput?.value || 0);
         const existingBonusArmor = Number(existingBonusArmorInput?.value || 0);
         const existingBonusMr = Number(existingBonusMrInput?.value || 0);
+        const champLevel = Math.max(1, Math.min(20, Number(champLevelInput?.value || 20)));
 
         const fullItemResults = rankFullItemsByEHP(
             hp,
@@ -264,7 +284,8 @@ function runCalculation(){
             pen,
             existingBonusHp,
             existingBonusArmor,
-            existingBonusMr
+            existingBonusMr,
+            champLevel
         );
 
         const sortedFullItemResults = [...fullItemResults]
@@ -275,9 +296,11 @@ function runCalculation(){
             : sortedFullItemResults.slice(0, 8);
         let rankingHtml = "<div class='item-container'>";
 
+        const protoplasmShown = displayedItems.some(item => item.name === "Protoplasm Harness");
         const warmogShown = displayedItems.some(item => item.name === "Warmog's Armor");
         const jakshoShown = displayedItems.some(item => item.name === "Jak'Sho, The Protean");
 
+        const protoplasmLevelBox = document.getElementById("protoplasmLevelBox");
         const warmogBox = document.getElementById("warmogBonusHpBox");
         const jakshoArmorBox = document.getElementById("jakshoArmorBox");
         const jakshoMrBox = document.getElementById("jakshoMrBox");
@@ -294,6 +317,10 @@ function runCalculation(){
         if (jakshoMrBox) {
             jakshoMrBox.style.display = jakshoShown ? "block" : "none";
         }
+        if (protoplasmLevelBox) {
+            protoplasmLevelBox.style.display = protoplasmShown ? "block" : "none";
+        }
+        
                 
 
         for (const item of displayedItems) {
@@ -331,7 +358,7 @@ function runCalculation(){
         }
 
         rankingHtml += "</div>";
-
+        const { effectiveArmor, effectiveMr } = getEffectiveResists(armor, mr, pen);
         document.getElementById("fullItemRanking").innerHTML = rankingHtml;
         document.getElementById("itemScenario").innerHTML = `
             <div class="scenario-box">
@@ -348,38 +375,53 @@ function runCalculation(){
                     </div>
                 </div>
 
-                <div class="scenario-main">
+                <div class="scenario-main scenario-main-3col">
+
                     <div class="scenario-group">
                         <div class="scenario-group-title">Physical side</div>
+
                         <div class="scenario-row">
                             <span class="scenario-label">Armor</span>
                             <span class="scenario-value">${armor}</span>
                         </div>
-                        
-                        <div class="scenario-row">
-                            <span class="scenario-label">Lethality</span>
+
+                        <div class="scenario-row scenario-enemy-row">
+                            <span class="scenario-label">Enemy Lethality</span>
                             <span class="scenario-value">${lethality}</span>
                         </div>
-                        <div class="scenario-row">
-                            <span class="scenario-label">% Armor Pen</span>
+
+                        <div class="scenario-row scenario-enemy-row">
+                            <span class="scenario-label">Enemy % Armor Pen</span>
                             <span class="scenario-value">${(percentArmorPen * 100).toFixed(0)}%</span>
+                        </div>
+
+                        <div class="scenario-row scenario-effective-row">
+                            <span class="scenario-label">Effective Armor</span>
+                            <span class="scenario-value">${effectiveArmor.toFixed(2)}</span>
                         </div>
                     </div>
 
                     <div class="scenario-group">
                         <div class="scenario-group-title">Magic side</div>
+
                         <div class="scenario-row">
                             <span class="scenario-label">MR</span>
                             <span class="scenario-value">${mr}</span>
                         </div>
-                        
-                        <div class="scenario-row">
-                            <span class="scenario-label">Flat Magic Pen</span>
+
+                        <div class="scenario-row scenario-enemy-row">
+                            <span class="scenario-label">Enemy Flat Magic Pen</span>
                             <span class="scenario-value">${flatMagicPen}</span>
                         </div>
-                        <div class="scenario-row">
-                            <span class="scenario-label">% Magic Pen</span>
+
+                        <div class="scenario-row scenario-enemy-row">
+                            <span class="scenario-label">Enemy % Magic Pen</span>
                             <span class="scenario-value">${(percentMagicPen * 100).toFixed(0)}%</span>
+                        </div>
+
+                        <div class="scenario-row scenario-effective-row">
+                            <span class="scenario-label">Effective MR</span>
+                            <span class="scenario-value">${effectiveMr.toFixed(2)}</span>
                         </div>
                     </div>
 
@@ -430,10 +472,11 @@ function getPassiveAdjustedValues(
     pen,
     existingBonusHp = 0,
     existingBonusArmor = 0,
-    existingBonusMr = 0
-) {
-    let hp = baseHp + item.hp;
-    let armor = baseArmor + item.armor;
+    existingBonusMr = 0,
+    champLevel = 1
+) { 
+    let hp = baseHp + item.hp; 
+    let armor = baseArmor + item.armor; 
     let mr = baseMr + item.mr;
 
     let extraMagicShield = 0;
@@ -471,24 +514,46 @@ function getPassiveAdjustedValues(
         passiveStateTexts.push("Assumes all physical damage is from crit auto attacks");
     }
     if (item.name === "Jak'Sho, The Protean") {
-    const bonusArmorAfterItem = existingBonusArmor + item.armor;
-    const bonusMrAfterItem = existingBonusMr + item.mr;
+        const bonusArmorAfterItem = existingBonusArmor + item.armor;
+        const bonusMrAfterItem = existingBonusMr + item.mr;
 
-    const jakshoBonusArmor = 0.30 * bonusArmorAfterItem;
-    const jakshoBonusMr = 0.30 * bonusMrAfterItem;
+        const jakshoBonusArmor = 0.30 * bonusArmorAfterItem;
+        const jakshoBonusMr = 0.30 * bonusMrAfterItem;
 
-    armor += jakshoBonusArmor;
-    mr += jakshoBonusMr;
+        armor += jakshoBonusArmor;
+        mr += jakshoBonusMr;
 
-    finalEhp = mixedEHP(hp, armor, mr, physShare, pen);
+        finalEhp = mixedEHP(hp, armor, mr, physShare, pen);
 
-    passiveTexts.push(
-        `+${jakshoBonusArmor.toFixed(2)} Armor and +${jakshoBonusMr.toFixed(2)} MR from Jak'Sho passive (30% bonus resists)`
-    );
-    passiveStateTexts.push(
-        `Assumes Passive is stacked with ${bonusArmorAfterItem} bonus Armor and ${bonusMrAfterItem} bonus MR`
-    );
-}
+        passiveTexts.push(
+            `+${jakshoBonusArmor.toFixed(2)} Armor and +${jakshoBonusMr.toFixed(2)} MR from Jak'Sho passive (30% bonus resists)`
+        );
+        passiveStateTexts.push(
+            `Assumes Passive is stacked with ${bonusArmorAfterItem} bonus Armor and ${bonusMrAfterItem} bonus MR`
+        );
+    }
+    if (item.name === "Protoplasm Harness") {
+        const level = Math.max(1, Math.min(20, champLevel));
+
+        const passiveBonusHp = 200 + (100 / 17) * (level - 1);
+        const passiveHeal =
+            200 +
+            (200 / 17) * (level - 1) +
+            1.75 * (existingBonusArmor + item.armor) +
+            1.75 * (existingBonusMr + item.mr);
+
+        const totalPassiveHp = passiveBonusHp + passiveHeal;
+
+        hp += totalPassiveHp;
+        finalEhp = mixedEHP(hp, armor, mr, physShare, pen);
+
+        passiveTexts.push(
+            `+${passiveBonusHp.toFixed(2)} temporary HP and +${passiveHeal.toFixed(2)} healing from Protoplasm passive`
+        );
+        passiveStateTexts.push(
+            `Assumes full passive effect at level ${level} with ${existingBonusArmor + item.armor} bonus Armor and ${existingBonusMr + item.mr} bonus MR`
+        );
+    }  
 
     return {
         finalEhp,
@@ -667,7 +732,8 @@ function rankFullItemsByEHP(
     pen,
     existingBonusHp = 0,
     existingBonusArmor = 0,
-    existingBonusMr = 0
+    existingBonusMr = 0,
+    champLevel = 20
 ) {
     const baseEhp = mixedEHP(baseHp, baseArmor, baseMr, physShare, pen);
 
@@ -690,7 +756,8 @@ function rankFullItemsByEHP(
             pen,
             existingBonusHp,
             existingBonusArmor,
-            existingBonusMr
+            existingBonusMr,
+            champLevel
         );
 
         const passiveGain = adjusted.finalEhp - baseItemEhp;
