@@ -346,7 +346,7 @@ function runCalculation(){
                     ${item.passiveGain > 0 ? `
                         <div class="item-passive">
                             <div class="item-passive-title">Passive contribution</div>
-                            <div>Passive EHP Gain: ${item.passiveGain.toFixed(2)}</div>
+                            <div>${item.name === "Kaenic Rookern" ? "Magic Shield EHP" : "Passive EHP Gain"}: ${item.passiveGain.toFixed(2)}</div>
                             <div>Stacked Total EHP Gain: ${item.totalGain.toFixed(2)}</div>
                             <div>Stacked Total EHP / Gold: ${item.totalPerGold.toFixed(4)}</div>
                             <div class="item-passive-text">${item.passiveText}</div>
@@ -492,11 +492,13 @@ function getPassiveAdjustedValues(
     }
 
     if (item.name === "Kaenic Rookern") {
-        extraMagicShield = 0.15 * hp;
-        finalEhp = mixedEHPWithMagicShield(hp, armor, mr, physShare, extraMagicShield, pen);
-        passiveTexts.push(`Magic shield: ${extraMagicShield.toFixed(2)} (15% max HP)`);
-        passiveStateTexts.push("Assumes Kaenic shield is available");
-    }
+    extraMagicShield = 0.15 * hp;
+
+    finalEhp = mixedEHP(hp, armor, mr, physShare, pen);
+
+    passiveTexts.push(`Magic shield: ${extraMagicShield.toFixed(2)} (15% max HP)`);
+    passiveStateTexts.push("Assumes Kaenic magic shield is fully used");
+}
 
     if (item.name === "Warmog's Armor") {
         const warmogPassiveHp = 0.12 * (existingBonusHp + item.hp);
@@ -571,7 +573,6 @@ function mixedEHPWithModifiers(hp, armor, mr, physShare, pen, options = {}) {
     const { effectiveArmor, effectiveMr } = getEffectiveResists(armor, mr, pen);
 
     const physicalReduction = options.physicalReduction || 0;
-    const magicShield = options.magicShield || 0;
 
     const physicalDamageFraction =
         physShare * (1 - physicalReduction) / (1 + effectiveArmor / 100);
@@ -579,32 +580,38 @@ function mixedEHPWithModifiers(hp, armor, mr, physShare, pen, options = {}) {
     const magicDamageFraction =
         magicShare / (1 + effectiveMr / 100);
 
-    const hpEhp = hp / (physicalDamageFraction + magicDamageFraction);
-
-    let shieldEhp = 0;
-
-    if (magicShield > 0 && magicShare > 0) {
-        shieldEhp = (magicShield * (1 + effectiveMr / 100)) / magicShare;
-    }
-
-    return hpEhp + shieldEhp;
+    return hp / (physicalDamageFraction + magicDamageFraction);
+}
+function getMagicShieldEhp(magicShield, mr, pen) {
+    const { effectiveMr } = getEffectiveResists(0, mr, pen);
+    return magicShield * (1 + effectiveMr / 100);
 }
 function mixedEHPWithMagicShield(hp, armor, mr, physShare, magicShield = 0, pen) {
     const magicShare = 1 - physShare;
-
     const { effectiveArmor, effectiveMr } = getEffectiveResists(armor, mr, pen);
 
-    const hpPortion =
-        hp / (
-            physShare / (1 + effectiveArmor / 100) +
-            magicShare / (1 + effectiveMr / 100)
-        );
+    const physFrac = physShare / (1 + effectiveArmor / 100);
+    const magicFrac = magicShare / (1 + effectiveMr / 100);
+    const totalFrac = physFrac + magicFrac;
 
-    const shieldPortion = magicShield * (1 + effectiveMr / 100);
+    const baseEhp = hp / totalFrac;
 
-    const mixedShieldEhp = magicShare > 0 ? shieldPortion / magicShare : 0;
+    if (magicShield <= 0 || magicShare <= 0) {
+        return baseEhp;
+    }
 
-    return hpPortion + mixedShieldEhp;
+    if (physShare <= 0) {
+        return (hp + magicShield) / magicFrac;
+    }
+
+    const damageToFullyConsumeShield = magicShield / magicFrac;
+    const damageToDieFromPhysicalOnly = hp / physFrac;
+
+    if (damageToDieFromPhysicalOnly <= damageToFullyConsumeShield) {
+        return damageToDieFromPhysicalOnly;
+    }
+
+    return (hp + magicShield) / totalFrac;
 }
 
 
@@ -760,9 +767,14 @@ function rankFullItemsByEHP(
             champLevel
         );
 
-        const passiveGain = adjusted.finalEhp - baseItemEhp;
-        const totalGain = adjusted.finalEhp - baseEhp;
+        let passiveGain = adjusted.finalEhp - baseItemEhp;
+        let totalGain = adjusted.finalEhp - baseEhp;
 
+        if (item.name === "Kaenic Rookern") {
+            const magicShield = 0.15 * rawHp;
+            passiveGain = getMagicShieldEhp(magicShield, rawMr, pen);
+            totalGain = baseGain + passiveGain;
+        }
         return {
             id: item.id,
             name: item.name,
