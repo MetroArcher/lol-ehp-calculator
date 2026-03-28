@@ -91,7 +91,7 @@ How efficient the item is at increasing survivability.
 
 The tool displays the **top 8 most efficient items** for the current situation.
 
-Note: Only **raw stats are considered**. Item passives are not included.
+Note: Most Item passives are included as separate effects.
 
 ---
 
@@ -126,7 +126,18 @@ No installation or dependencies are required.
 # Example of how I use this tool
 
 This section is for those familiar with the game and have a sense of intuition of the game.
-Lets look at this scenario of a game where i am playing varus, and i have already the first 2 core items that give me the necessary tools to output reasonable damage over time. 
+
+
+A simple example is this game on cho'gath, where i want to buy whatever item makes me the tankiest in this game for teamfights.
+![alt text](images/ChoGame.png)
+I put my stats on the calculator (tecnically you should use the stats you would have when you finish the item, but the point will still stand) and quickly see that randuins is just a nobrainer here, especially since i make use of its passive against the crit akshan and sivir. we can also see how strong it is compared to other items, almost double the strenght of any other item if we only get hit by crit auto attacks
+![alt text](images/ChoGameAnalysis.png)
+
+
+
+
+
+Now lets look at this scenario of a game where i am playing varus, and i have already the first 2 core items that give me the necessary tools to output reasonable damage over time. 
 
 ![Example Scenario](images/ExampleLolScenario.png)
 
@@ -138,12 +149,13 @@ Based on game intuition, i predict that i will take around 70% physical damage f
 
 First thing to look at is the theoretical stat optimization, to have a sense of what will currently give me the maximum durability.
 
-![Short term analysis](images/ShortTermAnalysis.png)
+![Short term analysis](images/ShortAnalysis.png)
 
-From this i can understand that right now i want to put more gold into buying armor, so i should prioritize buying armor components of the item.
+From this i can understand that right now i want to put more gold into both buying armor and HP, so i should buy both armor and hp components.
 
-![Full Items analysis](images/FullItems.png)
+![Full Items analysis](images/Fullitemsanalysis.png)
 
-But when looking at the items i see that Randuins is the best gold effective item i can buy to be as tanky as possible against the enemy comp. And looking back at the component combination, if i want to be as tanky as possible and i have around 1500 gold, i should prioritize giants belt + 2x cloth armors as the buildpath for randuins, as the wardens mail passive isnt really useful against the enemy team composition. If we wanted to look at alternatives, for example jaksho could be better(the current tool doesnt calculate how effective it is with the passive on) but i know that in this game most fights will be bursty(they will damage me quickly in the beginning of the fight, i wont be able to stack jaksho until it is too late) so jaksho shouldnt be a good item here. Another option is warmogs which could be good (its passive is also not modeled in this tool), as it will give me more effective HP vs their team's magic damage dealers, however i see that in this game they have strong %HP damage (rumble Q, ambessa Q, nami's imperial mandate) so i also discard that option. As for the rest it should be pretty self explanatory that they are just worse overall.
+But when looking at the items i see that Randuins is the best gold effective item i can buy to be as tanky as possible against the enemy comp. And looking back at the component combination, if i want to be as tanky as possible and i have around 1500 gold, i should prioritize giants belt + 2x cloth armors as the buildpath for randuins, as the wardens mail passive isnt really useful against the enemy team composition. If we wanted to look at alternatives, for example jaksho can be better but i know that in this game most fights will be bursty(they will damage me quickly in the beginning of the fight, i wont be able to stack jaksho until it is too late) so jaksho shouldnt be a good item here. Another option is warmogs which could be good, as it will give me more effective HP vs their team's magic damage dealers, however i see that in this game they have strong %HP damage (rumble Q, ambessa Q, nami's imperial mandate) so i also discard that option. As for the rest it should be pretty self explanatory that they are just worse overall. So to conclude Randuins should be the best defensive item to build here.
 
 There are other scenarios this tool can be used for, for tanks on toplane or as final items for other adcs (for example crit ADCS that have all their core items and just want to have the highest durability item late game). Just be mindful of a few item passives not being modeled, which should be clear from the UI of the tool if it is present or not.
+
