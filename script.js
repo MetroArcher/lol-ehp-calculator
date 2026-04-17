@@ -134,6 +134,11 @@ async function initializeCalculator() {
 
     document.getElementById("calculate").addEventListener("click", runCalculation);
 
+    const sortModeSelect = document.getElementById("sortMode");
+    if (sortModeSelect) {
+        sortModeSelect.addEventListener("change", runCalculation);
+    }
+
     const existingBonusHpInput = document.getElementById("existingBonusHp");
     const existingBonusArmorInput = document.getElementById("existingBonusArmor");
     const existingBonusMrInput = document.getElementById("existingBonusMr");
@@ -288,9 +293,28 @@ function runCalculation(){
             champLevel
         );
 
-        const sortedFullItemResults = [...fullItemResults]
-            .sort((a, b) => b.basePerGold - a.basePerGold);
+        const sortMode = document.getElementById("sortMode")?.value || "totalPerGold";
 
+        const label = document.getElementById("currentSortLabel");
+        if (label) {
+            label.textContent = `Sorting by: ${sortMode}`;
+        }
+
+        const sortedFullItemResults = [...fullItemResults].sort((a, b) => {
+            switch (sortMode) {
+                case "baseGain":
+                    return b.baseGain - a.baseGain;
+                case "basePerGold":
+                    return b.basePerGold - a.basePerGold;
+                case "totalGain":
+                    return b.totalGain - a.totalGain;
+                case "totalPerGold":
+                    return b.totalPerGold - a.totalPerGold;
+                default:
+                    return b.totalPerGold - a.totalPerGold;
+            }
+        });
+        
         const displayedItems = showAllFullItems
             ? sortedFullItemResults
             : sortedFullItemResults.slice(0, 8);
@@ -514,6 +538,13 @@ function getPassiveAdjustedValues(
         });
         passiveTexts.push("30% reduced physical damage taken from crit auto attacks");
         passiveStateTexts.push("Assumes all physical damage is from crit auto attacks");
+    }
+    if (item.name === "Frozen Heart") {
+        finalEhp = mixedEHPWithModifiers(hp, armor, mr, physShare, pen, {
+            physicalReduction: 0.20
+        });
+        passiveTexts.push("20% reduced physical damage from autos");
+        passiveStateTexts.push("Assumes all physical damage is from auto attacks");
     }
     if (item.name === "Jak'Sho, The Protean") {
         const bonusArmorAfterItem = existingBonusArmor + item.armor;

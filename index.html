@@ -115,6 +115,16 @@
                         <input id="champLevel" type="number" min="1" max="20" value="20">
                     </div>
                 </div>
+                <div class="sort-container">
+                    <span class="sort-label"></span>
+                    <span id="currentSortLabel" class="sort-value"></span>
+                </div>
+                <select id="sortMode">
+                    <option value="baseGain">Base EHP Gain</option>
+                    <option value="basePerGold">Base EHP / Gold</option>
+                    <option value="totalGain">Total EHP Gain (with passives)</option>
+                    <option value="totalPerGold" selected>Total EHP / Gold (with passives)</option>
+                </select>
                 <div id="fullItemRanking"></div>
                 <div class="ranking-controls">
                     <button id="toggleFullItemView" type="button">Show All Items</button>
